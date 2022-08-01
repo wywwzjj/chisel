@@ -11,12 +11,12 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-//sshTunnel exposes a subset of Tunnel to subtypes
+// sshTunnel exposes a subset of Tunnel to subtypes
 type sshTunnel interface {
 	getSSH(ctx context.Context) ssh.Conn
 }
 
-//Proxy is the inbound portion of a Tunnel
+// Proxy is the inbound portion of a Tunnel
 type Proxy struct {
 	*cio.Logger
 	sshTun sshTunnel
@@ -28,7 +28,7 @@ type Proxy struct {
 	udp    *udpListener
 }
 
-//NewProxy creates a Proxy
+// NewProxy creates a Proxy
 func NewProxy(logger *cio.Logger, sshTun sshTunnel, index int, remote *settings.Remote) (*Proxy, error) {
 	id := index + 1
 	p := &Proxy{
@@ -42,7 +42,7 @@ func NewProxy(logger *cio.Logger, sshTun sshTunnel, index int, remote *settings.
 
 func (p *Proxy) listen() error {
 	if p.remote.Stdio {
-		//TODO check if pipes active?
+		// TODO check if pipes active?
 	} else if p.remote.LocalProto == "tcp" {
 		addr, err := net.ResolveTCPAddr("tcp", p.remote.LocalHost+":"+p.remote.LocalPort)
 		if err != nil {
@@ -67,8 +67,8 @@ func (p *Proxy) listen() error {
 	return nil
 }
 
-//Run enables the proxy and blocks while its active,
-//close the proxy by cancelling the context.
+// Run enables the proxy and blocks while its active,
+// close the proxy by cancelling the context.
 func (p *Proxy) Run(ctx context.Context) error {
 	if p.remote.Stdio {
 		return p.runStdio(ctx)
@@ -95,7 +95,7 @@ func (p *Proxy) runStdio(ctx context.Context) error {
 
 func (p *Proxy) runTCP(ctx context.Context) error {
 	done := make(chan struct{})
-	//implements missing net.ListenContext
+	// implements missing net.ListenContext
 	go func() {
 		select {
 		case <-ctx.Done():
@@ -108,7 +108,7 @@ func (p *Proxy) runTCP(ctx context.Context) error {
 		if err != nil {
 			select {
 			case <-ctx.Done():
-				//listener closed
+				// listener closed
 				err = nil
 			default:
 				p.Infof("Accept error: %s", err)
@@ -131,14 +131,14 @@ func (p *Proxy) pipeRemote(ctx context.Context, src io.ReadWriteCloser) {
 		l.Debugf("No remote connection")
 		return
 	}
-	//ssh request for tcp connection for this proxy's remote
-	dst, reqs, err := sshConn.OpenChannel("chisel", []byte(p.remote.Remote()))
+	// ssh request for tcp connection for this proxy's remote
+	dst, reqs, err := sshConn.OpenChannel("hello", []byte(p.remote.Remote()))
 	if err != nil {
 		l.Infof("Stream error: %s", err)
 		return
 	}
 	go ssh.DiscardRequests(reqs)
-	//then pipe
+	// then pipe
 	s, r := cio.Pipe(src, dst)
 	l.Debugf("Close (sent %s received %s)", sizestr.ToString(s), sizestr.ToString(r))
 }
