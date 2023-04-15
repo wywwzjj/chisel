@@ -13,7 +13,7 @@ const DetermRandIter = 2048
 
 func NewDetermRand(seed []byte) io.Reader {
 	var out []byte
-	//strengthen seed
+	// strengthen seed
 	var next = seed
 	for i := 0; i < DetermRandIter; i++ {
 		next, out = hash(next)

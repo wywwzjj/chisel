@@ -37,7 +37,7 @@ func (t *Tunnel) handleSSHChannel(ch ssh.NewChannel) {
 		return
 	}
 	remote := string(ch.ExtraData())
-	//extract protocol
+	// extract protocol
 	hostPort, proto := settings.L4Proto(remote)
 	udp := proto == "udp"
 	socks := hostPort == "socks"
@@ -52,11 +52,11 @@ func (t *Tunnel) handleSSHChannel(ch ssh.NewChannel) {
 		return
 	}
 	stream := io.ReadWriteCloser(sshChan)
-	//cnet.MeterRWC(t.Logger.Fork("sshchan"), sshChan)
+	// cnet.MeterRWC(t.Logger.Fork("sshchan"), sshChan)
 	defer stream.Close()
 	go ssh.DiscardRequests(reqs)
 	l := t.Logger.Fork("conn#%d", t.connStats.New())
-	//ready to handle
+	// ready to handle
 	t.connStats.Open()
 	l.Debugf("Open %s", t.connStats.String())
 	if socks {

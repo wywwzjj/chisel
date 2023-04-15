@@ -1,3 +1,4 @@
+//go:build pprof
 // +build pprof
 
 package cos
@@ -5,7 +6,7 @@ package cos
 import (
 	"log"
 	"net/http"
-	_ "net/http/pprof" //import http profiler api
+	_ "net/http/pprof" // import http profiler api
 )
 
 func init() {

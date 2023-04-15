@@ -6,10 +6,10 @@ import (
 	"os"
 )
 
-//Logger is pkg/log Logger with prefixing and 2 log levels
+// Logger is pkg/log Logger with prefixing and 2 log levels
 type Logger struct {
 	Info, Debug bool
-	//internal
+	// internal
 	prefix      string
 	logger      *log.Logger
 	info, debug *bool
@@ -46,10 +46,10 @@ func (l *Logger) Errorf(f string, args ...interface{}) error {
 }
 
 func (l *Logger) Fork(prefix string, args ...interface{}) *Logger {
-	//slip the parent prefix at the front
+	// slip the parent prefix at the front
 	args = append([]interface{}{l.prefix}, args...)
 	ll := NewLogger(fmt.Sprintf("%s: "+prefix, args...))
-	//store link to parent settings too
+	// store link to parent settings too
 	ll.Info = l.Info
 	if l.info != nil {
 		ll.info = l.info

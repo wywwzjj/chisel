@@ -1,5 +1,5 @@
-//chisel end-to-end test
-//======================
+// chisel end-to-end test
+// ======================
 //
 //                    (direct)
 //         .--------------->----------------.
@@ -55,13 +55,13 @@ func run() {
 	}
 }
 
-//test
+// test
 func test() {
 	testTunnel("2001", 500)
 	testTunnel("2001", 50000)
 }
 
-//benchmark
+// benchmark
 func bench() {
 	benchSizes("3000")
 	benchSizes("2001")
@@ -97,7 +97,7 @@ func testTunnel(port string, size int) {
 	}
 }
 
-//============================
+// ============================
 
 func requestFile(port string, size int) (*http.Response, error) {
 	url := "http://127.0.0.1:" + port + "/" + strconv.Itoa(size)
@@ -108,7 +108,7 @@ func requestFile(port string, size int) (*http.Response, error) {
 func makeFileServer() *cnet.HTTPServer {
 	bsize := 3 * MB
 	bytes := make([]byte, bsize)
-	//filling huge buffer
+	// filling huge buffer
 	for i := 0; i < len(bytes); i++ {
 		bytes[i] = byte(i)
 	}
@@ -127,7 +127,7 @@ func makeFileServer() *cnet.HTTPServer {
 	return s
 }
 
-//============================
+// ============================
 
 func fatal(args ...interface{}) {
 	panic(fmt.Sprint(args...))
@@ -136,9 +136,8 @@ func fatalf(f string, args ...interface{}) {
 	panic(fmt.Sprintf(f, args...))
 }
 
-//global setup
+// global setup
 func main() {
-
 	fs := makeFileServer()
 	go func() {
 		err := fs.Wait()
@@ -176,7 +175,7 @@ func main() {
 
 	time.Sleep(100 * time.Millisecond)
 
-	hd := exec.Command("chisel", "server",
+	hd := exec.Command("./chisel-darwin_amd64", "server",
 		// "-v",
 		"--key", "foobar",
 		"--port", "2002")
@@ -188,9 +187,9 @@ func main() {
 
 	time.Sleep(100 * time.Millisecond)
 
-	hf := exec.Command("chisel", "client",
+	hf := exec.Command("./chisel-darwin_amd64", "client",
 		// "-v",
-		"--fingerprint", "mOz4rg9zlQ409XAhhj6+fDDVwQMY42CL3Zg2W2oTYxA=",
+		"--fingerprint", "OHclTPr2X1+S7CdRWW7dLFP7SwgtZy6jub2UmnpbTXw=",
 		"127.0.0.1:2002",
 		"2001:3000")
 	hf.Stdout = os.Stdout

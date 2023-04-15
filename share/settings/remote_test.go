@@ -6,7 +6,7 @@ import (
 )
 
 func TestRemoteDecode(t *testing.T) {
-	//test table
+	// test table
 	for i, test := range []struct {
 		Input   string
 		Output  Remote
@@ -112,7 +112,7 @@ func TestRemoteDecode(t *testing.T) {
 			"R:[::]:3000:[::1]:3000",
 		},
 	} {
-		//expected defaults
+		// expected defaults
 		expected := test.Output
 		if expected.LocalHost == "" {
 			expected.LocalHost = "0.0.0.0"
@@ -123,7 +123,7 @@ func TestRemoteDecode(t *testing.T) {
 		if expected.LocalProto == "" {
 			expected.LocalProto = "tcp"
 		}
-		//compare
+		// compare
 		got, err := DecodeRemote(test.Input)
 		if err != nil {
 			t.Fatalf("decode #%d '%s' failed: %s", i+1, test.Input, err)

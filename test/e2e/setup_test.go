@@ -26,11 +26,11 @@ type testLayout struct {
 }
 
 func (tl *testLayout) setup(t *testing.T) (server *chserver.Server, client *chclient.Client, teardown func()) {
-	//start of the world
+	// start of the world
 	// goroutines := runtime.NumGoroutine()
-	//root cancel
+	// root cancel
 	ctx, cancel := context.WithCancel(context.Background())
-	//fileserver (fake endpoint)
+	// fileserver (fake endpoint)
 	filePort := availablePort()
 	if tl.fileServer {
 		fileAddr := "127.0.0.1:" + filePort
@@ -54,7 +54,7 @@ func (tl *testLayout) setup(t *testing.T) (server *chserver.Server, client *chcl
 			f.Close()
 		}()
 	}
-	//server
+	// server
 	server, err := chserver.NewServer(tl.server)
 	if err != nil {
 		t.Fatal(err)
@@ -69,16 +69,16 @@ func (tl *testLayout) setup(t *testing.T) (server *chserver.Server, client *chcl
 		server.Infof("Closed")
 		cancel()
 	}()
-	//client (with defaults)
+	// client (with defaults)
 	tl.client.Fingerprint = server.GetFingerprint()
 	if tl.server.TLS.Key != "" {
-		//the domain name has to be localhost to match the ssl cert
+		// the domain name has to be localhost to match the ssl cert
 		tl.client.Server = "https://localhost:" + port
 	} else {
 		tl.client.Server = "http://127.0.0.1:" + port
 	}
 	for i, r := range tl.client.Remotes {
-		//convert $FILEPORT into the allocated port for this test case
+		// convert $FILEPORT into the allocated port for this test case
 		if tl.fileServer {
 			tl.client.Remotes[i] = strings.Replace(r, "$FILEPORT", filePort, 1)
 		}
@@ -96,12 +96,12 @@ func (tl *testLayout) setup(t *testing.T) (server *chserver.Server, client *chcl
 		client.Infof("Closed")
 		cancel()
 	}()
-	//cancel context tree, and wait for both client and server to stop
+	// cancel context tree, and wait for both client and server to stop
 	teardown = func() {
 		cancel()
 		server.Wait()
 		client.Wait()
-		//confirm goroutines have been cleaned up
+		// confirm goroutines have been cleaned up
 		// time.Sleep(500 * time.Millisecond)
 		// TODO remove sleep
 		// d := runtime.NumGoroutine() - goroutines
@@ -110,11 +110,11 @@ func (tl *testLayout) setup(t *testing.T) (server *chserver.Server, client *chcl
 		// 	t.Fatalf("goroutines left %d", d)
 		// }
 	}
-	//wait a bit...
-	//TODO: client signal API, similar to os.Notify(signal)
+	// wait a bit...
+	// TODO: client signal API, similar to os.Notify(signal)
 	//      wait for client setup
 	time.Sleep(50 * time.Millisecond)
-	//ready
+	// ready
 	return server, client, teardown
 }
 

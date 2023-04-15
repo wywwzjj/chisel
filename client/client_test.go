@@ -15,7 +15,7 @@ import (
 )
 
 func TestCustomHeaders(t *testing.T) {
-	//fake server
+	// fake server
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -25,7 +25,7 @@ func TestCustomHeaders(t *testing.T) {
 		wg.Done()
 	}))
 	defer server.Close()
-	//client
+	// client
 	headers := http.Header{}
 	headers.Set("Foo", "Bar")
 	config := Config{
@@ -40,7 +40,7 @@ func TestCustomHeaders(t *testing.T) {
 		log.Fatal(err)
 	}
 	go c.Run()
-	//wait for test to complete
+	// wait for test to complete
 	wg.Wait()
 	c.Close()
 }

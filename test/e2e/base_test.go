@@ -9,14 +9,14 @@ import (
 
 func TestBase(t *testing.T) {
 	tmpPort := availablePort()
-	//setup server, client, fileserver
+	// setup server, client, fileserver
 	teardown := simpleSetup(t,
 		&chserver.Config{},
 		&chclient.Config{
 			Remotes: []string{tmpPort + ":$FILEPORT"},
 		})
 	defer teardown()
-	//test remote
+	// test remote
 	result, err := post("http://localhost:"+tmpPort, "foo")
 	if err != nil {
 		t.Fatal(err)
@@ -28,7 +28,7 @@ func TestBase(t *testing.T) {
 
 func TestReverse(t *testing.T) {
 	tmpPort := availablePort()
-	//setup server, client, fileserver
+	// setup server, client, fileserver
 	teardown := simpleSetup(t,
 		&chserver.Config{
 			Reverse: true,
@@ -37,7 +37,7 @@ func TestReverse(t *testing.T) {
 			Remotes: []string{"R:" + tmpPort + ":$FILEPORT"},
 		})
 	defer teardown()
-	//test remote (this goes through the server and out the client)
+	// test remote (this goes through the server and out the client)
 	result, err := post("http://localhost:"+tmpPort, "foo")
 	if err != nil {
 		t.Fatal(err)

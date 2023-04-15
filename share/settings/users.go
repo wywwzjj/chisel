@@ -153,7 +153,7 @@ func (u *UserIndex) loadUserIndex() error {
 		}
 		users = append(users, user)
 	}
-	//swap
+	// swap
 	u.Reset(users)
 	return nil
 }

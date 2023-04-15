@@ -18,22 +18,22 @@ import (
 )
 
 func (c *Client) connectionLoop(ctx context.Context) error {
-	//connection loop!
+	// connection loop!
 	b := &backoff.Backoff{Max: c.config.MaxRetryInterval}
 	for {
 		connected, err := c.connectionOnce(ctx)
-		//reset backoff after successful connections
+		// reset backoff after successful connections
 		if connected {
 			b.Reset()
 		}
-		//connection error
+		// connection error
 		attempt := int(b.Attempt())
 		maxAttempt := c.config.MaxRetryCount
-		//dont print closed-connection errors
+		// dont print closed-connection errors
 		if strings.HasSuffix(err.Error(), "use of closed network connection") {
 			err = io.EOF
 		}
-		//show error message and attempt counts (excluding disconnects)
+		// show error message and attempt counts (excluding disconnects)
 		if err != nil && err != io.EOF {
 			msg := fmt.Sprintf("Connection error: %s", err)
 			if attempt > 0 {
@@ -45,7 +45,7 @@ func (c *Client) connectionLoop(ctx context.Context) error {
 			}
 			c.Infof(msg)
 		}
-		//give up?
+		// give up?
 		if maxAttempt >= 0 && attempt >= maxAttempt {
 			c.Infof("Give up")
 			break
@@ -54,7 +54,7 @@ func (c *Client) connectionLoop(ctx context.Context) error {
 		c.Infof("Retrying in %s...", d)
 		select {
 		case <-cos.AfterSignal(d):
-			continue //retry now
+			continue // retry now
 		case <-ctx.Done():
 			c.Infof("Cancelled")
 			return nil
@@ -66,16 +66,16 @@ func (c *Client) connectionLoop(ctx context.Context) error {
 
 // connectionOnce connects to the chisel server and blocks
 func (c *Client) connectionOnce(ctx context.Context) (connected bool, err error) {
-	//already closed?
+	// already closed?
 	select {
 	case <-ctx.Done():
 		return false, errors.New("Cancelled")
 	default:
-		//still open
+		// still open
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	//prepare dialer
+	// prepare dialer
 	d := websocket.Dialer{
 		HandshakeTimeout: settings.EnvDuration("WS_TIMEOUT", 45*time.Second),
 		Subprotocols:     []string{chshare.ProtocolVersion},
@@ -84,7 +84,7 @@ func (c *Client) connectionOnce(ctx context.Context) (connected bool, err error)
 		WriteBufferSize:  settings.EnvInt("WS_BUFF_SIZE", 0),
 		NetDialContext:   c.config.DialContext,
 	}
-	//optional proxy
+	// optional proxy
 	if p := c.proxyURL; p != nil {
 		if err := c.setProxy(p, &d); err != nil {
 			return false, err
@@ -126,7 +126,7 @@ func (c *Client) connectionOnce(ctx context.Context) (connected bool, err error)
 		return false, errors.New(string(configerr))
 	}
 	c.Infof("Connected (Latency %s)", time.Since(t0))
-	//connected, handover ssh connection for tunnel to use, and block
+	// connected, handover ssh connection for tunnel to use, and block
 	err = c.tunnel.BindSSH(ctx, sshConn, reqs, chans)
 	c.Infof("Disconnected")
 	connected = time.Since(t0) > 5*time.Second

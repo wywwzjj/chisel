@@ -12,14 +12,14 @@ import (
 )
 
 func TestUDP(t *testing.T) {
-	//listen on random udp port
+	// listen on random udp port
 	echoPort := availableUDPPort()
 	a, _ := net.ResolveUDPAddr("udp", ":"+echoPort)
 	l, err := net.ListenUDP("udp", a)
 	if err != nil {
 		t.Fatal(err)
 	}
-	//chisel client+server
+	// chisel client+server
 	inboundPort := availableUDPPort()
 	teardown := simpleSetup(t,
 		&chserver.Config{},
@@ -30,7 +30,7 @@ func TestUDP(t *testing.T) {
 		},
 	)
 	defer teardown()
-	//fake udp server, read and echo back duplicated, close
+	// fake udp server, read and echo back duplicated, close
 	eg := errgroup.Group{}
 	eg.Go(func() error {
 		defer l.Close()
@@ -44,16 +44,16 @@ func TestUDP(t *testing.T) {
 		}
 		return nil
 	})
-	//fake udp client
+	// fake udp client
 	conn, err := net.Dial("udp4", "localhost:"+inboundPort)
 	if err != nil {
 		t.Fatal(err)
 	}
-	//write bazz through the tunnel
+	// write bazz through the tunnel
 	if _, err := conn.Write([]byte("bazz")); err != nil {
 		t.Fatal(err)
 	}
-	//receive bazzbazz back
+	// receive bazzbazz back
 	b := make([]byte, 128)
 	conn.SetReadDeadline(time.Now().Add(2 * time.Second))
 	n, err := conn.Read(b)
@@ -61,12 +61,12 @@ func TestUDP(t *testing.T) {
 		t.Fatal(err)
 		return
 	}
-	//udp server should close correctly
+	// udp server should close correctly
 	if err := eg.Wait(); err != nil {
 		t.Fatal(err)
 		return
 	}
-	//ensure expected
+	// ensure expected
 	s := string(b[:n])
 	if s != "bazzbazz" {
 		t.Fatalf("expected double bazz")

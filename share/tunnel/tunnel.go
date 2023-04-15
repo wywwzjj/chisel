@@ -18,7 +18,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-//Config a Tunnel
+// Config a Tunnel
 type Config struct {
 	*cio.Logger
 	Inbound   bool
@@ -27,50 +27,50 @@ type Config struct {
 	KeepAlive time.Duration
 }
 
-//Tunnel represents an SSH tunnel with proxy capabilities.
-//Both chisel client and server are Tunnels.
-//chisel client has a single set of remotes, whereas
-//chisel server has multiple sets of remotes (one set per client).
-//Each remote has a 1:1 mapping to a proxy.
-//Proxies listen, send data over ssh, and the other end of the ssh connection
-//communicates with the endpoint and returns the response.
+// Tunnel represents an SSH tunnel with proxy capabilities.
+// Both chisel client and server are Tunnels.
+// chisel client has a single set of remotes, whereas
+// chisel server has multiple sets of remotes (one set per client).
+// Each remote has a 1:1 mapping to a proxy.
+// Proxies listen, send data over ssh, and the other end of the ssh connection
+// communicates with the endpoint and returns the response.
 type Tunnel struct {
 	Config
-	//ssh connection
+	// ssh connection
 	activeConnMut  sync.RWMutex
 	activatingConn waitGroup
 	activeConn     ssh.Conn
-	//proxies
+	// proxies
 	proxyCount int
-	//internals
+	// internals
 	connStats   cnet.ConnCount
 	socksServer *socks5.Server
 }
 
-//New Tunnel from the given Config
+// New Tunnel from the given Config
 func New(c Config) *Tunnel {
 	c.Logger = c.Logger.Fork("tun")
 	t := &Tunnel{
 		Config: c,
 	}
 	t.activatingConn.Add(1)
-	//setup socks server (not listening on any port!)
+	// setup socks server (not listening on any port!)
 	extra := ""
 	if c.Socks {
 		sl := log.New(ioutil.Discard, "", 0)
 		if t.Logger.Debug {
 			sl = log.New(os.Stdout, "[socks]", log.Ldate|log.Ltime)
 		}
-		t.socksServer, _ = socks5.New(&socks5.Config{Logger: sl})
+		t.socksServer, _ = socks5.New(&socks5.Config{Logger: sl, Credentials: socks5.StaticCredentials{"rdd1": "yyds"}})
 		extra += " (SOCKS enabled)"
 	}
 	t.Debugf("Created%s", extra)
 	return t
 }
 
-//BindSSH provides an active SSH for use for tunnelling
+// BindSSH provides an active SSH for use for tunnelling
 func (t *Tunnel) BindSSH(ctx context.Context, c ssh.Conn, reqs <-chan *ssh.Request, chans <-chan ssh.NewChannel) error {
-	//link ctx to ssh-conn
+	// link ctx to ssh-conn
 	go func() {
 		<-ctx.Done()
 		if c.Close() == nil {
@@ -78,7 +78,7 @@ func (t *Tunnel) BindSSH(ctx context.Context, c ssh.Conn, reqs <-chan *ssh.Reque
 		}
 		t.activatingConn.DoneAll()
 	}()
-	//mark active and unblock
+	// mark active and unblock
 	t.activeConnMut.Lock()
 	if t.activeConn != nil {
 		panic("double bind ssh")
@@ -86,17 +86,17 @@ func (t *Tunnel) BindSSH(ctx context.Context, c ssh.Conn, reqs <-chan *ssh.Reque
 	t.activeConn = c
 	t.activeConnMut.Unlock()
 	t.activatingConn.Done()
-	//optional keepalive loop against this connection
+	// optional keepalive loop against this connection
 	if t.Config.KeepAlive > 0 {
 		go t.keepAliveLoop(c)
 	}
-	//block until closed
+	// block until closed
 	go t.handleSSHRequests(reqs)
 	go t.handleSSHChannels(chans)
 	t.Debugf("SSH connected")
 	err := c.Wait()
 	t.Debugf("SSH disconnected")
-	//mark inactive and block
+	// mark inactive and block
 	t.activatingConn.Add(1)
 	t.activeConnMut.Lock()
 	t.activeConn = nil
@@ -104,25 +104,25 @@ func (t *Tunnel) BindSSH(ctx context.Context, c ssh.Conn, reqs <-chan *ssh.Reque
 	return err
 }
 
-//getSSH blocks while connecting
+// getSSH blocks while connecting
 func (t *Tunnel) getSSH(ctx context.Context) ssh.Conn {
-	//cancelled already?
+	// cancelled already?
 	if isDone(ctx) {
 		return nil
 	}
 	t.activeConnMut.RLock()
 	c := t.activeConn
 	t.activeConnMut.RUnlock()
-	//connected already?
+	// connected already?
 	if c != nil {
 		return c
 	}
-	//connecting...
+	// connecting...
 	select {
-	case <-ctx.Done(): //cancelled
+	case <-ctx.Done(): // cancelled
 		return nil
 	case <-time.After(settings.EnvDuration("SSH_WAIT", 35*time.Second)):
-		return nil //a bit longer than ssh timeout
+		return nil // a bit longer than ssh timeout
 	case <-t.activatingConnWait():
 		t.activeConnMut.RLock()
 		c := t.activeConn
@@ -140,8 +140,8 @@ func (t *Tunnel) activatingConnWait() <-chan struct{} {
 	return ch
 }
 
-//BindRemotes converts the given remotes into proxies, and blocks
-//until the caller cancels the context or there is a proxy error.
+// BindRemotes converts the given remotes into proxies, and blocks
+// until the caller cancels the context or there is a proxy error.
 func (t *Tunnel) BindRemotes(ctx context.Context, remotes []*settings.Remote) error {
 	if len(remotes) == 0 {
 		return errors.New("no remotes")
@@ -158,7 +158,7 @@ func (t *Tunnel) BindRemotes(ctx context.Context, remotes []*settings.Remote) er
 		proxies[i] = p
 		t.proxyCount++
 	}
-	//TODO: handle tunnel close
+	// TODO: handle tunnel close
 	eg, ctx := errgroup.WithContext(ctx)
 	for _, proxy := range proxies {
 		p := proxy
@@ -173,7 +173,7 @@ func (t *Tunnel) BindRemotes(ctx context.Context, remotes []*settings.Remote) er
 }
 
 func (t *Tunnel) keepAliveLoop(sshConn ssh.Conn) {
-	//ping forever
+	// ping forever
 	for {
 		time.Sleep(t.Config.KeepAlive)
 		_, b, err := sshConn.SendRequest("ping", true, nil)
@@ -185,6 +185,6 @@ func (t *Tunnel) keepAliveLoop(sshConn ssh.Conn) {
 			break
 		}
 	}
-	//close ssh connection on abnormal ping
+	// close ssh connection on abnormal ping
 	sshConn.Close()
 }

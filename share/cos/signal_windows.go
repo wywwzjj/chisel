@@ -1,4 +1,5 @@
-//+build windows
+//go:build windows
+// +build windows
 
 package cos
 
@@ -7,7 +8,7 @@ import (
 )
 
 func GoStats() {
-	//noop
+	// noop
 }
 
 func AfterSignal(d time.Duration) <-chan struct{} {

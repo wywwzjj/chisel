@@ -5,6 +5,7 @@ chisel
 bin/
 release/
 tmp/
+build/
 *.orig
 debug
 
@@ -32,3 +33,5 @@ _testmain.go
 *.exe
 *.test
 *.prof
+.DS_Store
+*amd64

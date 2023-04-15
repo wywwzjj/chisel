@@ -1,6 +1,6 @@
 package chshare
 
-//this file exists to maintain backwards compatibility
+// this file exists to maintain backwards compatibility
 
 import (
 	"github.com/jpillora/chisel/share/ccrypto"
@@ -50,7 +50,7 @@ var (
 	NewTCPProxy      = tunnel.NewProxy
 )
 
-//EncodeConfig old version
+// EncodeConfig old version
 func EncodeConfig(c *settings.Config) ([]byte, error) {
 	return settings.EncodeConfig(*c), nil
 }

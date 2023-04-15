@@ -29,7 +29,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-//Config represents a client configuration
+// Config represents a client configuration
 type Config struct {
 	Fingerprint      string
 	Auth             string
@@ -45,7 +45,7 @@ type Config struct {
 	Verbose          bool
 }
 
-//TLSConfig for a Client
+// TLSConfig for a Client
 type TLSConfig struct {
 	SkipVerify bool
 	CA         string
@@ -54,7 +54,7 @@ type TLSConfig struct {
 	ServerName string
 }
 
-//Client represents a client instance
+// Client represents a client instance
 type Client struct {
 	*cio.Logger
 	config    *Config
@@ -69,9 +69,9 @@ type Client struct {
 	tunnel    *tunnel.Tunnel
 }
 
-//NewClient creates a new client instance
+// NewClient creates a new client instance
 func NewClient(c *Config) (*Client, error) {
-	//apply default scheme
+	// apply default scheme
 	if !strings.HasPrefix(c.Server, "http") {
 		c.Server = "http://" + c.Server
 	}
@@ -82,9 +82,9 @@ func NewClient(c *Config) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	//swap to websockets scheme
+	// swap to websockets scheme
 	u.Scheme = strings.Replace(u.Scheme, "http", "ws", 1)
-	//apply default port
+	// apply default port
 	if !regexp.MustCompile(`:\d+$`).MatchString(u.Host) {
 		if u.Scheme == "wss" {
 			u.Host = u.Host + ":443"
@@ -104,15 +104,15 @@ func NewClient(c *Config) (*Client, error) {
 		server:    u.String(),
 		tlsConfig: nil,
 	}
-	//set default log level
+	// set default log level
 	client.Logger.Info = c.Verbose
-	//configure tls
+	// configure tls
 	if u.Scheme == "wss" {
 		tc := &tls.Config{}
 		if c.TLS.ServerName != "" {
 			tc.ServerName = c.TLS.ServerName
 		}
-		//certificate verification config
+		// certificate verification config
 		if c.TLS.SkipVerify {
 			client.Infof("TLS verification disabled")
 			tc.InsecureSkipVerify = true
@@ -127,7 +127,7 @@ func NewClient(c *Config) (*Client, error) {
 				tc.RootCAs = rootCAs
 			}
 		}
-		//provide client cert and key pair for mtls
+		// provide client cert and key pair for mtls
 		if c.TLS.Cert != "" && c.TLS.Key != "" {
 			c, err := tls.LoadX509KeyPair(c.TLS.Cert, c.TLS.Key)
 			if err != nil {
@@ -139,7 +139,7 @@ func NewClient(c *Config) (*Client, error) {
 		}
 		client.tlsConfig = tc
 	}
-	//validate remotes
+	// validate remotes
 	for _, s := range c.Remotes {
 		r, err := settings.DecodeRemote(s)
 		if err != nil {
@@ -157,20 +157,20 @@ func NewClient(c *Config) (*Client, error) {
 			}
 			hasStdio = true
 		}
-		//confirm non-reverse tunnel is available
+		// confirm non-reverse tunnel is available
 		if !r.Reverse && !r.Stdio && !r.CanListen() {
 			return nil, fmt.Errorf("Client cannot listen on %s", r.String())
 		}
 		client.computed.Remotes = append(client.computed.Remotes, r)
 	}
-	//outbound proxy
+	// outbound proxy
 	if p := c.Proxy; p != "" {
 		client.proxyURL, err = url.Parse(p)
 		if err != nil {
 			return nil, fmt.Errorf("Invalid proxy URL (%s)", err)
 		}
 	}
-	//ssh auth and config
+	// ssh auth and config
 	user, pass := settings.ParseAuth(c.Auth)
 	client.sshConfig = &ssh.ClientConfig{
 		User:            user,
@@ -179,10 +179,10 @@ func NewClient(c *Config) (*Client, error) {
 		HostKeyCallback: client.verifyServer,
 		Timeout:         settings.EnvDuration("SSH_TIMEOUT", 30*time.Second),
 	}
-	//prepare client tunnel
+	// prepare client tunnel
 	client.tunnel = tunnel.New(tunnel.Config{
 		Logger:    client.Logger,
-		Inbound:   true, //client always accepts inbound
+		Inbound:   true, // client always accepts inbound
 		Outbound:  hasReverse,
 		Socks:     hasReverse && hasSocks,
 		KeepAlive: client.config.KeepAlive,
@@ -190,7 +190,7 @@ func NewClient(c *Config) (*Client, error) {
 	return client, nil
 }
 
-//Run starts client and blocks while connected
+// Run starts client and blocks while connected
 func (c *Client) Run() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -216,12 +216,12 @@ func (c *Client) verifyServer(hostname string, remote net.Addr, key ssh.PublicKe
 	if got != expect {
 		return fmt.Errorf("Invalid fingerprint (%s)", got)
 	}
-	//overwrite with complete fingerprint
+	// overwrite with complete fingerprint
 	c.Infof("Fingerprint %s", got)
 	return nil
 }
 
-//verifyLegacyFingerprint calculates and compares legacy MD5 fingerprints
+// verifyLegacyFingerprint calculates and compares legacy MD5 fingerprints
 func (c *Client) verifyLegacyFingerprint(key ssh.PublicKey) error {
 	bytes := md5.Sum(key.Marshal())
 	strbytes := make([]string, len(bytes))
@@ -236,7 +236,7 @@ func (c *Client) verifyLegacyFingerprint(key ssh.PublicKey) error {
 	return nil
 }
 
-//Start client and does not block
+// Start client and does not block
 func (c *Client) Start(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	c.stop = cancel
@@ -247,11 +247,11 @@ func (c *Client) Start(ctx context.Context) error {
 		via = " via " + c.proxyURL.String()
 	}
 	c.Infof("Connecting to %s%s\n", c.server, via)
-	//connect to chisel server
+	// connect to chisel server
 	eg.Go(func() error {
 		return c.connectionLoop(ctx)
 	})
-	//listen sockets
+	// listen sockets
 	eg.Go(func() error {
 		clientInbound := c.computed.Remotes.Reversed(false)
 		if len(clientInbound) == 0 {
@@ -293,12 +293,12 @@ func (c *Client) setProxy(u *url.URL, d *websocket.Dialer) error {
 	return nil
 }
 
-//Wait blocks while the client is running.
+// Wait blocks while the client is running.
 func (c *Client) Wait() error {
 	return c.eg.Wait()
 }
 
-//Close manually stops the client
+// Close manually stops the client
 func (c *Client) Close() error {
 	if c.stop != nil {
 		c.stop()

@@ -16,24 +16,24 @@ import (
 
 // handleClientHandler is the main http websocket handler for the chisel server
 func (s *Server) handleClientHandler(w http.ResponseWriter, r *http.Request) {
-	//websockets upgrade AND has chisel prefix
+	// websockets upgrade AND has chisel prefix
 	upgrade := strings.ToLower(r.Header.Get("Upgrade"))
 	protocol := r.Header.Get("Sec-WebSocket-Protocol")
-	if upgrade == "websocket"  {
+	if upgrade == "websocket" {
 		if protocol == chshare.ProtocolVersion {
 			s.handleWebsocket(w, r)
 			return
 		}
-		//print into server logs and silently fall-through
+		// print into server logs and silently fall-through
 		s.Infof("ignored client connection using protocol '%s', expected '%s'",
 			protocol, chshare.ProtocolVersion)
 	}
-	//proxy target was provided
+	// proxy target was provided
 	if s.reverseProxy != nil {
 		s.reverseProxy.ServeHTTP(w, r)
 		return
 	}
-	//no proxy defined, provide access to health/version checks
+	// no proxy defined, provide access to health/version checks
 	switch r.URL.Path {
 	case "/health":
 		w.Write([]byte("OK\n"))
@@ -42,7 +42,7 @@ func (s *Server) handleClientHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(chshare.BuildVersion))
 		return
 	}
-	//missing :O
+	// missing :O
 	w.WriteHeader(404)
 	w.Write([]byte("Not found"))
 }
@@ -56,14 +56,17 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, req *http.Request) {
 		l.Debugf("Failed to upgrade (%s)", err)
 		return
 	}
+
 	conn := cnet.NewWebSocketConn(wsConn)
 	// perform SSH handshake on net.Conn
 	l.Debugf("Handshaking with %s...", req.RemoteAddr)
+
 	sshConn, chans, reqs, err := ssh.NewServerConn(conn, s.sshConfig)
 	if err != nil {
 		s.Debugf("Failed to handshake (%s)", err)
 		return
 	}
+
 	// pull the users from the session map
 	var user *settings.User
 	if s.users.Len() > 0 {
@@ -75,6 +78,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, req *http.Request) {
 		user = u
 		s.sessions.Del(sid)
 	}
+
 	// chisel server handshake (reverse of client handshake)
 	// verify configuration
 	l.Debugf("Verifying configuration")
@@ -100,7 +104,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, req *http.Request) {
 		failed(s.Errorf("invalid config"))
 		return
 	}
-	//print if client and server  versions dont match
+	// print if client and server versions don't match
 	if c.Version != chshare.BuildVersion {
 		v := c.Version
 		if v == "" {
@@ -109,10 +113,10 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, req *http.Request) {
 		l.Infof("Client version (%s) differs from server version (%s)",
 			v, chshare.BuildVersion)
 	}
-	//validate remotes
+	// validate remotes
 	for _, r := range c.Remotes {
-		//if user is provided, ensure they have
-		//access to the desired remotes
+		// if user is provided, ensure they have
+		// access to the desired remotes
 		if user != nil {
 			addr := r.UserAddr()
 			if !user.HasAccess(addr) {
@@ -120,42 +124,42 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, req *http.Request) {
 				return
 			}
 		}
-		//confirm reverse tunnels are allowed
+		// confirm reverse tunnels are allowed
 		if r.Reverse && !s.config.Reverse {
 			l.Debugf("Denied reverse port forwarding request, please enable --reverse")
 			failed(s.Errorf("Reverse port forwaring not enabled on server"))
 			return
 		}
-		//confirm reverse tunnel is available
+		// confirm reverse tun is available
 		if r.Reverse && !r.CanListen() {
 			failed(s.Errorf("Server cannot listen on %s", r.String()))
 			return
 		}
 	}
-	//successfuly validated config!
+	// successfuly validated config!
 	r.Reply(true, nil)
-	//tunnel per ssh connection
-	tunnel := tunnel.New(tunnel.Config{
+	// tun per ssh connection
+	tun := tunnel.New(tunnel.Config{
 		Logger:    l,
 		Inbound:   s.config.Reverse,
-		Outbound:  true, //server always accepts outbound
+		Outbound:  true, // server always accepts outbound
 		Socks:     s.config.Socks5,
 		KeepAlive: s.config.KeepAlive,
 	})
-	//bind
+	// bind
 	eg, ctx := errgroup.WithContext(req.Context())
 	eg.Go(func() error {
-		//connected, handover ssh connection for tunnel to use, and block
-		return tunnel.BindSSH(ctx, sshConn, reqs, chans)
+		// connected, handover ssh connection for tun to use, and block
+		return tun.BindSSH(ctx, sshConn, reqs, chans)
 	})
 	eg.Go(func() error {
-		//connected, setup reversed-remotes?
+		// connected, setup reversed-remotes?
 		serverInbound := c.Remotes.Reversed(true)
 		if len(serverInbound) == 0 {
 			return nil
 		}
-		//block
-		return tunnel.BindRemotes(ctx, serverInbound)
+		// block
+		return tun.BindRemotes(ctx, serverInbound)
 	})
 	err = eg.Wait()
 	if err != nil && !strings.HasSuffix(err.Error(), "EOF") {

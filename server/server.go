@@ -73,25 +73,25 @@ func NewServer(c *Config) (*Server, error) {
 			server.users.AddUser(u)
 		}
 	}
-	//generate private key (optionally using seed)
+	// generate private key (optionally using seed)
 	key, err := ccrypto.GenerateKey(c.KeySeed)
 	if err != nil {
 		log.Fatal("Failed to generate key")
 	}
-	//convert into ssh.PrivateKey
+	// convert into ssh.PrivateKey
 	private, err := ssh.ParsePrivateKey(key)
 	if err != nil {
 		log.Fatal("Failed to parse key")
 	}
-	//fingerprint this key
+	// fingerprint this key
 	server.fingerprint = ccrypto.FingerprintKey(private.PublicKey())
-	//create ssh config
+	// create ssh config
 	server.sshConfig = &ssh.ServerConfig{
 		ServerVersion:    "SSH-" + chshare.ProtocolVersion + "-server",
 		PasswordCallback: server.authUser,
 	}
 	server.sshConfig.AddHostKey(private)
-	//setup reverse proxy
+	// setup reverse proxy
 	if c.Proxy != "" {
 		u, err := url.Parse(c.Proxy)
 		if err != nil {
@@ -101,15 +101,15 @@ func NewServer(c *Config) (*Server, error) {
 			return nil, server.Errorf("Missing protocol (%s)", u)
 		}
 		server.reverseProxy = httputil.NewSingleHostReverseProxy(u)
-		//always use proxy host
+		// always use proxy host
 		server.reverseProxy.Director = func(r *http.Request) {
-			//enforce origin, keep path
+			// enforce origin, keep path
 			r.URL.Scheme = u.Scheme
 			r.URL.Host = u.Host
 			r.Host = u.Host
 		}
 	}
-	//print when reverse tunnelling is enabled
+	// print when reverse tunnelling is enabled
 	if c.Reverse {
 		server.Infof("Reverse tunnelling enabled")
 	}

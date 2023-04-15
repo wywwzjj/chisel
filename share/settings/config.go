@@ -20,7 +20,7 @@ func DecodeConfig(b []byte) (*Config, error) {
 }
 
 func EncodeConfig(c Config) []byte {
-	//Config doesn't have types that can fail to marshal
+	// Config doesn't have types that can fail to marshal
 	b, _ := json.Marshal(c)
 	return b
 }

@@ -50,16 +50,16 @@ func (h *udpHandler) handleWrite(p *udpPacket) error {
 	if err := h.r.Decode(&p); err != nil {
 		return err
 	}
-	//dial now, we know we must write
+	// dial now, we know we must write
 	conn, exists, err := h.udpConns.dial(p.Src, h.hostPort)
 	if err != nil {
 		return err
 	}
-	//however, we dont know if we must read...
-	//spawn up to <max-conns> go-routines to wait
-	//for a reply.
-	//TODO configurable
-	//TODO++ dont use go-routines, switch to pollable
+	// however, we dont know if we must read...
+	// spawn up to <max-conns> go-routines to wait
+	// for a reply.
+	// TODO configurable
+	// TODO++ dont use go-routines, switch to pollable
 	//  array of listeners where all listeners are
 	//  sweeped periodically, removing the idle ones
 	const maxConns = 100
@@ -78,14 +78,14 @@ func (h *udpHandler) handleWrite(p *udpPacket) error {
 }
 
 func (h *udpHandler) handleRead(p *udpPacket, conn *udpConn) {
-	//ensure connection is cleaned up
+	// ensure connection is cleaned up
 	defer h.udpConns.remove(conn.id)
 	buff := make([]byte, h.maxMTU)
 	for {
-		//response must arrive within 15 seconds
+		// response must arrive within 15 seconds
 		deadline := settings.EnvDuration("UDP_DEADLINE", 15*time.Second)
 		conn.SetReadDeadline(time.Now().Add(deadline))
-		//read response
+		// read response
 		n, err := conn.Read(buff)
 		if err != nil {
 			if !os.IsTimeout(err) && err != io.EOF {
@@ -94,7 +94,7 @@ func (h *udpHandler) handleRead(p *udpPacket, conn *udpConn) {
 			break
 		}
 		b := buff[:n]
-		//encode back over ssh connection
+		// encode back over ssh connection
 		err = h.udpChannel.encode(p.Src, b)
 		if err != nil {
 			h.Debugf("encode error: %s", err)
