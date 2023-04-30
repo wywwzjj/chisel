@@ -20,14 +20,15 @@ type sshTunnel interface {
 // Proxy is the inbound portion of a Tunnel
 type Proxy struct {
 	*cio.Logger
-	sshTun sshTunnel
-	id     int
-	count  int
-	remote *settings.Remote
-	dialer net.Dialer
-	tcp    *net.TCPListener
-	udp    *udpListener
-	mu     sync.Mutex
+	sshTun  sshTunnel
+	sshTuns []sshTunnel
+	id      int
+	count   int
+	remote  *settings.Remote
+	dialer  net.Dialer
+	tcp     *net.TCPListener
+	udp     *udpListener
+	mu      sync.Mutex
 }
 
 // NewProxy creates a Proxy
@@ -132,6 +133,11 @@ func (p *Proxy) pipeRemote(ctx context.Context, src io.ReadWriteCloser) {
 
 	l := p.Fork("conn#%d", cid)
 	l.Debugf("Open")
+
+	// https://github.com/ashwanthkumar/gotlb
+	// id := rand.Intn(len(p.sshTuns))
+	// sshTun := p.sshTuns[id]
+
 	sshConn := p.sshTun.getSSH(ctx)
 	if sshConn == nil {
 		l.Debugf("No remote connection")

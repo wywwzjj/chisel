@@ -3,6 +3,7 @@ package chserver
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -214,4 +215,19 @@ func (s *Server) DeleteUser(user string) {
 // Use nil to remove all.
 func (s *Server) ResetUsers(users []*settings.User) {
 	s.users.Reset(users)
+}
+
+// check connections is healthy
+func (s *Server) proxyHealth() {
+	go func() {
+		ticker := time.NewTicker(time.Second) // creates a new ticker that ticks every second
+		defer ticker.Stop()                   // stop the ticker when the function returns
+
+		for {
+			select {
+			case t := <-ticker.C: // wait for the ticker to tick
+				fmt.Println("Tick at", t)
+			}
+		}
+	}()
 }
